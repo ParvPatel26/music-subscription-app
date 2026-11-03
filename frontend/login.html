@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MusicStream — Login</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0f14;--surface:#161a23;--border:#2a2f3d;
+  --accent:#7c6af7;--text:#e8eaf0;--muted:#7a7f94;
+  --error:#e05c6a;--success:#4cbb8a;--radius:12px;
+  --warning:#e8a23a;
+}
+body{
+  font-family:'DM Sans',Arial,sans-serif;
+  background:var(--bg);color:var(--text);
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background-image:
+    radial-gradient(ellipse 80% 60% at 20% 10%,rgba(124,106,247,.15) 0%,transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 90%,rgba(76,187,138,.06) 0%,transparent 60%);
+}
+
+/* ── Card ── */
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:20px;padding:44px;width:100%;max-width:430px;
+  box-shadow:0 24px 60px rgba(0,0,0,.5);
+  animation:slideUp 0.4s ease;
+}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+
+.logo{font-family:'DM Serif Display',serif;font-size:1.9rem;margin-bottom:6px}
+.logo span{color:var(--accent)}
+.subtitle{color:var(--muted);font-size:.9rem;margin-bottom:28px}
+
+/* ── Labels ── */
+label{
+  display:block;font-size:.78rem;font-weight:500;
+  color:var(--muted);text-transform:uppercase;
+  letter-spacing:.08em;margin-bottom:8px;
+}
+
+/* ── Inputs ── */
+.input-wrap{position:relative;margin-bottom:6px}
+.input-wrap input{
+  width:100%;background:var(--bg);
+  border:1.5px solid var(--border);
+  border-radius:var(--radius);color:var(--text);
+  font-size:.95rem;padding:12px 14px;outline:none;
+  transition:border-color 0.25s, box-shadow 0.25s;
+  font-family:inherit;
+}
+.input-wrap input:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(124,106,247,0.15);
+}
+.input-wrap input.invalid{
+  border-color:var(--error);
+  box-shadow:0 0 0 3px rgba(224,92,106,0.15);
+  animation:shake 0.35s ease;
+}
+.input-wrap input.valid{
+  border-color:var(--success);
+}
+@keyframes shake{
+  0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-6px)}
+  40%{transform:translateX(6px)}
+  60%{transform:translateX(-4px)}
+  80%{transform:translateX(4px)}
+}
+
+/* ── Field error text ── */
+.field-error{
+  font-size:.75rem;color:var(--error);
+  margin-bottom:14px;margin-top:4px;
+  display:none;padding-left:2px;
+}
+
+/* ── Select ── */
+select{
+  width:100%;background:var(--bg);
+  border:1.5px solid var(--border);
+  border-radius:var(--radius);color:var(--text);
+  font-size:.95rem;padding:12px 14px;outline:none;
+  margin-bottom:18px;transition:border-color 0.2s;
+  font-family:inherit;cursor:pointer;
+}
+select:focus{border-color:var(--accent)}
+
+/* ── Login Button ── */
+.login-btn{
+  width:100%;background:var(--accent);color:#fff;border:none;
+  border-radius:var(--radius);font-size:1rem;font-weight:600;
+  padding:14px;margin-top:8px;cursor:pointer;
+  transition:all 0.25s;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  letter-spacing:0.03em;position:relative;overflow:hidden;
+  font-family:inherit;
+}
+/* Shimmer effect on hover */
+.login-btn::after{
+  content:'';position:absolute;top:0;left:-100%;
+  width:60%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent);
+  transition:left 0.4s ease;
+}
+.login-btn:hover:not(:disabled)::after{left:150%}
+.login-btn:hover:not(:disabled){
+  background:#6a58e8;
+  box-shadow:0 6px 20px rgba(124,106,247,0.4);
+  transform:translateY(-1px);
+}
+.login-btn:active:not(:disabled){
+  transform:translateY(0) scale(0.98);
+  box-shadow:none;
+}
+.login-btn:disabled{opacity:0.7;cursor:not-allowed;transform:none}
+
+/* ── Button loading state ── */
+.login-btn.loading{background:#5a4ed1;box-shadow:none}
+.spinner{
+  width:18px;height:18px;
+  border:2.5px solid rgba(255,255,255,0.3);
+  border-top-color:#fff;border-radius:50%;
+  animation:spin 0.7s linear infinite;display:none;
+  flex-shrink:0;
+}
+.login-btn.loading .spinner{display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Success state ── */
+.login-btn.success{background:#2d7a4f;pointer-events:none}
+
+/* ── Messages ── */
+.msg{
+  border-radius:10px;font-size:.88rem;
+  padding:11px 14px;margin-bottom:18px;display:none;
+  display:none;align-items:center;gap:8px;
+}
+.error-msg{background:rgba(224,92,106,.12);border:1px solid rgba(224,92,106,0.4);color:var(--error)}
+.hint{font-size:.75rem;color:var(--muted);margin-top:-10px;margin-bottom:16px;line-height:1.5}
+.footer-link{text-align:center;margin-top:24px;font-size:.88rem;color:var(--muted)}
+a{color:var(--accent);text-decoration:none;font-weight:500}
+a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">Music<span>Stream</span></div>
+  <p class="subtitle">Sign in to your account</p>
+
+  <!-- Global error message -->
+  <div class="msg error-msg" id="errorMsg" style="display:none;"></div>
+
+  <!-- Backend selector -->
+  <label for="backend">Backend</label>
+  <select id="backend">
+    <option value="lambda">Lambda / API Gateway</option>
+    <option value="ecs">ECS</option>
+    <option value="ec2">EC2</option>
+  </select>
+  <p class="hint">Default is Lambda. Switch during demo to test ECS or EC2.</p>
+
+  <!-- Email field -->
+  <label for="email">Email</label>
+  <div class="input-wrap">
+    <input type="email" id="email" placeholder="test@gmail.com"
+           oninput="validateEmail()" onblur="validateEmail()">
+  </div>
+  <div class="field-error" id="emailError"></div>
+
+  <!-- Password field -->
+  <label for="password">Password</label>
+  <div class="input-wrap">
+    <input type="password" id="password" placeholder="Enter your password"
+           oninput="clearFieldError('password')" style="margin-bottom:18px">
+  </div>
+
+  <!-- Login button -->
+  <button class="login-btn" id="loginBtn" onclick="doLogin()">
+    <div class="spinner"></div>
+    <span class="btn-text">Login</span>
+  </button>
+
+  <div class="footer-link">Don't have an account? <a href="register.html">Register</a></div>
+</div>
+
+<script>
+// ── API URLs ─────────────────────────────────────────
+const API_URLS = {
+  lambda: "https://eiyhsu4a21.execute-api.us-east-1.amazonaws.com/prod",
+  ecs:    "http://music-alb-494250144.us-east-1.elb.amazonaws.com",
+  ec2:    "http://ec2-54-167-187-74.compute-1.amazonaws.com"
+};
+
+document.getElementById("backend").value = sessionStorage.getItem("backend") || "lambda";
+
+function getApiBase() {
+  const backend = document.getElementById("backend").value;
+  sessionStorage.setItem("backend", backend);
+  return API_URLS[backend];
+}
+
+// ── Email validation ──────────────────────────────────
+function validateEmail() {
+  const input = document.getElementById("email");
+  const errEl = document.getElementById("emailError");
+  const val   = input.value.trim();
+
+  // Empty
+  if (!val) {
+    setFieldError("email", "Email is required.");
+    return false;
+  }
+  // Basic format check
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(val)) {
+    setFieldError("email", "Please enter a valid email address (e.g. test@gmail.com).");
+    return false;
+  }
+  // Valid
+  clearFieldError("email");
+  input.classList.add("valid");
+  return true;
+}
+
+function setFieldError(fieldId, msg) {
+  const input = document.getElementById(fieldId);
+  const errEl = document.getElementById(fieldId + "Error");
+  input.classList.remove("valid");
+  input.classList.add("invalid");
+  if (errEl) { errEl.textContent = msg; errEl.style.display = "block"; }
+}
+
+function clearFieldError(fieldId) {
+  const input = document.getElementById(fieldId);
+  const errEl = document.getElementById(fieldId + "Error");
+  input.classList.remove("invalid");
+  if (errEl) errEl.style.display = "none";
+}
+
+function showGlobalError(msg) {
+  const errBox = document.getElementById("errorMsg");
+  errBox.textContent   = msg;
+  errBox.style.display = "flex";
+  // Shake the card
+  document.querySelector(".card").style.animation = "none";
+  setTimeout(() => document.querySelector(".card").style.animation = "", 10);
+}
+
+// ── Button states ─────────────────────────────────────
+function setLoading(on) {
+  const btn = document.getElementById("loginBtn");
+  btn.disabled = on;
+  btn.classList.toggle("loading", on);
+  btn.querySelector(".btn-text").textContent = on ? "Logging in..." : "Login";
+}
+
+function setSuccess() {
+  const btn = document.getElementById("loginBtn");
+  btn.classList.remove("loading");
+  btn.classList.add("success");
+  btn.querySelector(".btn-text").textContent = "✓ Success! Redirecting...";
+}
+
+// ── Login ─────────────────────────────────────────────
+async function doLogin() {
+  const emailInput = document.getElementById("email");
+  const passInput  = document.getElementById("password");
+  const email      = emailInput.value.trim();
+  const password   = passInput.value.trim();
+  document.getElementById("errorMsg").style.display = "none";
+
+  // Validate email format first
+  const emailOk = validateEmail();
+
+  // Check password not empty
+  if (!password) {
+    setFieldError("password", "");
+    passInput.classList.add("invalid");
+  } else {
+    clearFieldError("password");
+  }
+
+  if (!emailOk || !password) {
+    showGlobalError("email or password is invalid");
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const res  = await fetch(`${getApiBase()}/auth/login`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      const payload = data.data || data.user || data;
+      sessionStorage.setItem("email",     payload.email     || email);
+      sessionStorage.setItem("user_name", payload.user_name || payload.username || email);
+      setSuccess();
+      setTimeout(() => { window.location.replace("main.html"); }, 800);
+    } else {
+      showGlobalError(data.message || "email or password is invalid");
+      // Shake the email and password inputs
+      emailInput.classList.add("invalid");
+      passInput.classList.add("invalid");
+      setTimeout(() => {
+        emailInput.classList.remove("invalid");
+        passInput.classList.remove("invalid");
+      }, 600);
+      setLoading(false);
+    }
+  } catch (e) {
+    showGlobalError("email or password is invalid");
+    setLoading(false);
+  }
+}
+
+document.addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
+</script>
+</body>
+</html>

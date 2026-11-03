@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MusicStream — My Music</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0f14;--surface:#161a23;--surface2:#1e2330;--border:#2a2f3d;
+  --accent:#7c6af7;--text:#e8eaf0;--muted:#7a7f94;
+  --error:#e05c6a;--success:#4cbb8a;--radius:12px;
+}
+body{font-family:'DM Sans',Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* ── Header ── */
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 32px;background:var(--surface);
+  border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:10;gap:14px;flex-wrap:wrap;
+}
+.logo{font-family:'DM Serif Display',serif;font-size:1.4rem}
+.logo span{color:var(--accent)}
+.user-area{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.username em{color:var(--accent);font-style:normal}
+.backend-select{
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:8px;color:var(--text);padding:7px 10px;
+  cursor:pointer;font-family:inherit;transition:border-color 0.2s;
+}
+.backend-select:hover{border-color:var(--accent)}
+.logout-btn{
+  color:var(--muted);font-size:.85rem;cursor:pointer;
+  border:1px solid var(--border);border-radius:6px;
+  padding:7px 16px;background:none;font-family:inherit;
+  transition:all 0.2s;
+}
+.logout-btn:hover{color:var(--error);border-color:var(--error)}
+
+/* ── Layout ── */
+.layout{display:grid;grid-template-columns:1fr 1fr;gap:24px;padding:28px 32px;max-width:1400px;margin:0 auto}
+@media(max-width:900px){.layout{grid-template-columns:1fr;padding:18px}}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;animation:fadeIn 0.3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.panel-title{font-family:'DM Serif Display',serif;font-size:1.25rem;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.panel-title span{color:var(--accent)}
+
+/* ── Query form ── */
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+@media(max-width:600px){.fields{grid-template-columns:1fr}}
+.field-group label{display:block;font-size:.75rem;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+.field-group input{
+  width:100%;background:var(--bg);border:1.5px solid var(--border);
+  border-radius:8px;color:var(--text);font-size:.9rem;
+  padding:10px 12px;outline:none;font-family:inherit;
+  transition:border-color 0.2s,box-shadow 0.2s;
+}
+.field-group input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,106,247,0.12)}
+
+/* ── Query button ── */
+.query-btn{
+  width:100%;background:var(--accent);color:#fff;border:none;
+  border-radius:8px;font-size:.95rem;font-weight:600;
+  padding:12px;cursor:pointer;font-family:inherit;
+  transition:all 0.25s;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  position:relative;overflow:hidden;
+}
+.query-btn::after{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent);transition:left 0.4s ease}
+.query-btn:hover:not(:disabled)::after{left:150%}
+.query-btn:hover:not(:disabled){background:#6a58e8;box-shadow:0 4px 15px rgba(124,106,247,0.35);transform:translateY(-1px)}
+.query-btn:active:not(:disabled){transform:scale(0.98);box-shadow:none}
+.query-btn:disabled{opacity:0.7;cursor:not-allowed;transform:none}
+.query-btn.loading{background:#5a4ed1}
+
+/* ── Spinner ── */
+.spinner{width:16px;height:16px;border:2.5px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;display:none;flex-shrink:0}
+.query-btn.loading .spinner{display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Song list ── */
+.song-list{display:flex;flex-direction:column;gap:10px;margin-top:16px;max-height:600px;overflow-y:auto;padding-right:4px}
+.song-list::-webkit-scrollbar{width:4px}
+.song-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+/* ── Song card ── */
+.song-card{
+  display:flex;align-items:center;gap:14px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;padding:12px 14px;
+  animation:cardIn 0.2s ease;
+  transition:border-color 0.2s;
+}
+.song-card:hover{border-color:rgba(124,106,247,0.3)}
+@keyframes cardIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
+.song-img{width:52px;height:52px;border-radius:8px;object-fit:cover;background:var(--border);flex-shrink:0}
+.song-info{flex:1;min-width:0}
+.song-title{font-weight:500;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.song-meta{font-size:.8rem;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ── Action buttons ── */
+.action-btn{
+  flex-shrink:0;border:none;border-radius:7px;
+  font-size:.8rem;font-weight:500;padding:7px 14px;
+  cursor:pointer;transition:all 0.2s;font-family:inherit;
+}
+.action-btn:disabled{opacity:0.6;cursor:not-allowed}
+.sub-btn{background:var(--accent);color:#fff}
+.sub-btn:hover:not(:disabled){background:#6a58e8;box-shadow:0 3px 10px rgba(124,106,247,0.3);transform:translateY(-1px)}
+.sub-btn:active:not(:disabled){transform:scale(0.96)}
+.rem-btn{background:rgba(224,92,106,.15);color:var(--error);border:1px solid rgba(224,92,106,.3)}
+.rem-btn:hover:not(:disabled){background:rgba(224,92,106,.25);transform:translateY(-1px)}
+.rem-btn:active:not(:disabled){transform:scale(0.96)}
+
+/* ── Status messages ── */
+.status{font-size:.87rem;margin-top:12px;padding:10px 14px;border-radius:8px;display:none;animation:fadeIn 0.2s ease}
+.status.error{background:rgba(224,92,106,.1);border:1px solid rgba(224,92,106,0.3);color:var(--error)}
+.status.info{background:rgba(124,106,247,.1);border:1px solid rgba(124,106,247,0.3);color:var(--accent)}
+.status.success{background:rgba(76,187,138,.1);border:1px solid rgba(76,187,138,0.3);color:var(--success)}
+
+/* ── Empty and loading states ── */
+.empty-msg{color:var(--muted);font-size:.88rem;text-align:center;padding:32px 0}
+.loading-msg{color:var(--muted);font-size:.88rem;text-align:center;padding:20px 0;display:none}
+.loading-dots::after{content:'...';animation:dots 1.2s steps(4,end) infinite}
+@keyframes dots{0%,20%{content:'.'}40%{content:'..'}60%,100%{content:'...'}}
+
+/* ── Autocomplete suggestions ── */
+.autocomplete-wrap{position:relative}
+.suggestions{
+  position:absolute;top:100%;left:0;right:0;
+  background:var(--surface2);
+  border:1px solid var(--accent);
+  border-radius:0 0 8px 8px;
+  max-height:180px;overflow-y:auto;
+  z-index:999;display:none;
+  box-shadow:0 8px 24px rgba(0,0,0,0.4);
+}
+.suggestions::-webkit-scrollbar{width:4px}
+.suggestions::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.suggestion-item{
+  padding:9px 14px;font-size:.88rem;cursor:pointer;
+  transition:background 0.15s;color:var(--text);
+  border-bottom:1px solid var(--border);
+}
+.suggestion-item:last-child{border-bottom:none}
+.suggestion-item:hover,.suggestion-item.active{
+  background:var(--accent);color:#fff;
+}
+.suggestion-highlight{font-weight:600}
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header>
+  <div class="logo">Music<span>Stream</span></div>
+  <div class="user-area">
+    <select id="backend" class="backend-select" onchange="backendChanged()">
+      <option value="lambda">Lambda / API Gateway</option>
+      <option value="ecs">ECS</option>
+      <option value="ec2">EC2</option>
+    </select>
+    <div class="username">Welcome, <em id="displayName">...</em></div>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<datalist id="albumList"><option value="(What's the Story) Morning Glory?"><option value="1989"><option value="40oz. to Freedom"><option value="A1A"><option value="Acoustic: Bradley Nowell & Friends"><option value="American Fool"><option value="American IV: The Man Comes Around"><option value="American Pie"><option value="Bang Bang"><option value="Barometer Soup"><option value="Blood on the Tracks"><option value="Blowin' Your Mind!"><option value="Brushfire Fairytales"><option value="Century Spring"><option value="Changes in Latitudes, Changes in Attitudes"><option value="Christmas Island"><option value="Coconut Telegraph"><option value="Conor Oberst"><option value="Crash"><option value="David Bowie (Space Oddity)"><option value="Decade"><option value="Doomsday"><option value="Double Fantasy"><option value="Elvis Perkins in Dearland"><option value="Escape"><option value="Fear Fun"><option value="Fearless"><option value="Fruitcakes"><option value="Full Moon Fever"><option value="Furr"><option value="G N' R Lies"><option value="Harvest"><option value="Honky Château"><option value="Hopes and Fears"><option value="Hotel California"><option value="How It Ends"><option value="In Between Dreams"><option value="Lalalalovesongs (Re:2021)"><option value="Listener Supported"><option value="Live from Mars"><option value="Lola Versus Powerman and the Moneygoround, Part One"><option value="Love is a Four Letter Word"><option value="Madman Across the Water"><option value="Mason Jennings"><option value="Mermaid Avenue"><option value="Metallica (The Black Album)"><option value="Modern Vampires of the City"><option value="Moondance"><option value="Music from Big Pink"><option value="My Head Is an Animal"><option value="New Miserable Experience"><option value="New Morning"><option value="OK Computer"><option value="On and On"><option value="One Particular Harbour"><option value="Pablo Honey"><option value="Paul Simon"><option value="Reckless"><option value="Red"><option value="Red (Deluxe Edition)"><option value="Red Dirt Girl"><option value="Reputation"><option value="Reputation (Deluxe)"><option value="Ricky Sings Again"><option value="Risen"><option value="Rivers of Babylon"><option value="Rivers of Babylon (Re-release)"><option value="Saints & Sinners"><option value="Save Me, San Francisco"><option value="Second Helping"><option value="Sgt. Pepper's Lonely Hearts Club Band"><option value="Some Devil"><option value="Some Nights"><option value="Starfish"><option value="Stealers Wheel"><option value="Still Bill"><option value="Sublime"><option value="Tea for the Tillerman"><option value="Teaser and the Firecat"><option value="The Bends"><option value="The Bones of What You Believe"><option value="The Carpenter"><option value="The Isle of View"><option value="The Lion's Roar"><option value="The Lumineers"><option value="The Suburbs"><option value="The Time of Our Lives"><option value="The Wild Hunt"><option value="There's No Leaving Now"><option value="To Pimp a Butterfly"><option value="Tom Petty and the Heartbreakers"><option value="Up from Below"><option value="Uprising"><option value="Verities & Balderdash"><option value="Viva la Vida or Death and All His Friends"><option value="Volume One"><option value="Weezer (The Green Album)"><option value="What We Saw from the Cheap Seats"><option value="What's Bin Did and What's Bin Hid"><option value="White Blood Cells"><option value="Why Do Birds Sing?"><option value="With His Hot and Blue Guitar"></datalist>
+<datalist id="artistList">
+  <option value="Arcade Fire"><option value="Ben Harper"><option value="Bill Withers">
+  <option value="Billy Bragg &amp; Wilco"><option value="Blitzen Trapper"><option value="Bob Dylan">
+  <option value="Bob Marley"><option value="Bryan Adams"><option value="Cat Stevens">
+  <option value="Chvrches"><option value="Coldplay"><option value="Conor Oberst">
+  <option value="Dave Matthews"><option value="David Bowie"><option value="DeVotchKa">
+  <option value="Dispatch"><option value="Don McLean"><option value="Donovan">
+  <option value="Edward Sharpe &amp; The Magnetic Zeros"><option value="Elton John">
+  <option value="Elvis Perkins"><option value="Emmylou Harris"><option value="Father John Misty">
+  <option value="First Aid Kit"><option value="Gin Blossoms"><option value="Guns N' Roses">
+  <option value="Harry Chapin"><option value="Jack Johnson"><option value="Jason Mraz">
+  <option value="Jimmy Buffett"><option value="John Lennon"><option value="John Mellencamp">
+  <option value="Johnny Cash"><option value="Journey"><option value="Keane">
+  <option value="Kendrick Lamar"><option value="Lynyrd Skynyrd"><option value="Mason Jennings">
+  <option value="Metallica"><option value="Miley Cyrus"><option value="Neil Young">
+  <option value="OAR"><option value="Oasis"><option value="Of Monsters and Men">
+  <option value="Paul Simon"><option value="Radiohead"><option value="Regina Spektor">
+  <option value="Ricky Nelson"><option value="She &amp; Him"><option value="Stealers Wheel">
+  <option value="Sublime"><option value="Taylor Swift"><option value="The Avett Brothers">
+  <option value="The Band"><option value="The Beatles"><option value="The Church">
+  <option value="The Eagles"><option value="The Kinks"><option value="The Lumineers">
+  <option value="The Melodians"><option value="The Pretenders"><option value="The Tallest Man on Earth">
+  <option value="The White Stripes"><option value="Tom Petty"><option value="Train">
+  <option value="Vampire Weekend"><option value="Van Morrison"><option value="Violent Femmes">
+  <option value="Weezer"><option value="Whitesnake"><option value="fun.">
+</datalist>
+<datalist id="yearList">
+  <option value="1957"><option value="1958"><option value="1965"><option value="1967">
+  <option value="1968"><option value="1969"><option value="1970"><option value="1971">
+  <option value="1972"><option value="1974"><option value="1975"><option value="1977">
+  <option value="1980"><option value="1981"><option value="1982"><option value="1983">
+  <option value="1984"><option value="1988"><option value="1989"><option value="1991">
+  <option value="1992"><option value="1993"><option value="1994"><option value="1995">
+  <option value="1996"><option value="1997"><option value="1998"><option value="1999">
+  <option value="2000"><option value="2001"><option value="2002"><option value="2003">
+  <option value="2004"><option value="2005"><option value="2008"><option value="2009">
+  <option value="2010"><option value="2012"><option value="2013"><option value="2014">
+  <option value="2015"><option value="2017"><option value="2018"><option value="2021">
+</datalist>
+
+<!-- ── Main layout ── -->
+<div class="layout">
+
+  <!-- Subscriptions panel -->
+  <div class="panel">
+    <div class="panel-title">My <span>Subscriptions</span></div>
+    <div id="subLoading" class="loading-msg">Loading<span class="loading-dots"></span></div>
+    <div id="subList"  class="song-list"></div>
+    <div id="subEmpty" class="empty-msg" style="display:none;">No subscriptions yet.<br>Search and subscribe to songs!</div>
+  </div>
+
+  <!-- Query panel -->
+  <div class="panel">
+    <div class="panel-title"><span>Search</span> Music</div>
+    <div class="fields">
+      <div class="field-group">
+        <label>Title</label>
+        <div class="autocomplete-wrap">
+          <input type="text" id="qTitle" placeholder="Love Story" autocomplete="off"
+                 oninput="showSuggestions('qTitle','titleSug',VALID_TITLES)"
+                 onkeydown="handleKey(event,'titleSug','qTitle')"
+                 onblur="hideSuggestions('titleSug')">
+          <div class="suggestions" id="titleSug"></div>
+        </div>
+      </div>
+      <div class="field-group">
+        <label>Artist</label>
+        <div class="autocomplete-wrap">
+          <input type="text" id="qArtist" placeholder="Taylor Swift" autocomplete="off"
+                 oninput="showSuggestions('qArtist','artistSug',VALID_ARTISTS)"
+                 onkeydown="handleKey(event,'artistSug','qArtist')"
+                 onblur="hideSuggestions('artistSug')">
+          <div class="suggestions" id="artistSug"></div>
+        </div>
+      </div>
+      <div class="field-group">
+        <label>Year</label>
+        <div class="autocomplete-wrap">
+          <input type="text" id="qYear" placeholder="2008" autocomplete="off"
+                 oninput="showSuggestions('qYear','yearSug',VALID_YEARS)"
+                 onkeydown="handleKey(event,'yearSug','qYear')"
+                 onblur="hideSuggestions('yearSug')">
+          <div class="suggestions" id="yearSug"></div>
+        </div>
+      </div>
+      <div class="field-group">
+        <label>Album</label>
+        <div class="autocomplete-wrap">
+          <input type="text" id="qAlbum" placeholder="Fearless" autocomplete="off"
+                 oninput="showSuggestions('qAlbum','albumSug',VALID_ALBUMS)"
+                 onkeydown="handleKey(event,'albumSug','qAlbum')"
+                 onblur="hideSuggestions('albumSug')">
+          <div class="suggestions" id="albumSug"></div>
+        </div>
+      </div>
+    </div>
+    <button class="query-btn" id="queryBtn" onclick="doQuery()">
+      <div class="spinner"></div>
+      <span class="btn-text">Query</span>
+    </button>
+    <div id="queryStatus" class="status"></div>
+    <div id="queryList"   class="song-list"></div>
+  </div>
+</div>
+
+<script>
+// ── API URLs ──────────────────────────────────────────
+const API_URLS = {
+  lambda: "https://eiyhsu4a21.execute-api.us-east-1.amazonaws.com/prod",
+  ecs:    "http://music-alb-494250144.us-east-1.elb.amazonaws.com",
+  ec2:    "http://ec2-54-167-187-74.compute-1.amazonaws.com"
+};
+
+// ── Session guard ─────────────────────────────────────
+const EMAIL = sessionStorage.getItem("email");
+const UNAME = sessionStorage.getItem("user_name");
+
+//Redirect immediately if not logged in
+if (!EMAIL) {
+    window.location.replace("login.html");
+}
+
+// Block browser back button after logout
+// Push a new state so back button triggers popstate
+history.pushState(null, null, window.location.href);
+window.addEventListener("popstate", function() {
+    // If user presses back, check session again
+    if (!sessionStorage.getItem("email")) {
+        window.location.replace("login.html");
+    } else {
+        // Stay on page - push state again to keep blocking
+        history.pushState(null, null, window.location.href);
+    }
+});
+
+// Check session every 2 seconds
+// Catches edge cases like tab duplication after logout
+const sessionCheck = setInterval(function() {
+    if (!sessionStorage.getItem("email")) {
+        clearInterval(sessionCheck);
+        window.location.replace("login.html");
+    }
+}, 2000);
+
+document.getElementById("displayName").textContent = UNAME || EMAIL;
+
+// ── Track subscribed songs (persists across search/refresh) ──
+// Stores song_id of every subscribed song so we can
+// mark Subscribe buttons as already subscribed after refresh
+const subscribedIds = new Set();
+
+// ── Backend selector ──────────────────────────────────
+const backendSelect = document.getElementById("backend");
+backendSelect.value = sessionStorage.getItem("backend") || "lambda";
+function getApiBase() { return API_URLS[backendSelect.value]; }
+
+function backendChanged() {
+  sessionStorage.setItem("backend", backendSelect.value);
+  document.getElementById("queryList").innerHTML = "";
+  document.getElementById("queryStatus").style.display = "none";
+  loadSubscriptions();
+  showStatus("queryStatus", "Switched to " + backendSelect.value.toUpperCase() + ". Subscriptions reloaded.", "info");
+}
+
+// ── Logout ────────────────────────────────────────────
+function logout() {
+  const b = sessionStorage.getItem("backend") || "lambda";
+  sessionStorage.clear();
+  sessionStorage.setItem("backend", b);
+  clearInterval(sessionCheck);
+  // Use replace() so back button cannot return to main page
+  window.location.replace("login.html");
+}
+
+// ── Status messages ───────────────────────────────────
+function showStatus(id, msg, type) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className   = `status ${type}`;
+  el.style.display = "block";
+}
+
+// ── Query button loading ──────────────────────────────
+function setQueryLoading(on) {
+  const btn = document.getElementById("queryBtn");
+  btn.disabled = on;
+  btn.classList.toggle("loading", on);
+  btn.querySelector(".btn-text").textContent = on ? "Searching..." : "Query";
+}
+
+// ── Normalise song from any backend format ────────────
+function normaliseSong(raw) {
+  const s         = raw || {};
+  const title     = s.title     || s.song_title || "";
+  const artist    = s.artist    || "";
+  const album     = s.album     || "";
+  const year      = s.year      ? String(s.year) : "";
+  const image_url = s.image_url || s.img_url || s.image || "";
+  const song_id   = s.song_id   || s.id || `${title}#${artist}#${album}`;
+  return { ...s, title, artist, album, year, image_url, song_id };
+}
+
+// ── Extract array from any backend response ───────────
+function extractArray(data) {
+  if (Array.isArray(data))                         return data;
+  if (Array.isArray(data.data))                    return data.data;
+  if (Array.isArray(data.songs))                   return data.songs;
+  if (Array.isArray(data.subscriptions))           return data.subscriptions;
+  if (data.data && Array.isArray(data.data.songs)) return data.data.songs;
+  return [];
+}
+
+// ── Build song card ───────────────────────────────────
+function makeSongCard(rawSong, mode) {
+  const song = normaliseSong(rawSong);
+  const card = document.createElement("div");
+  card.className = "song-card";
+  card._song = song;
+  const btn = mode === "subscribe"
+    ? `<button class="action-btn sub-btn" onclick="subscribe(this)">Subscribe</button>`
+    : `<button class="action-btn rem-btn"  onclick="removeSub(this)">Remove</button>`;
+  card.innerHTML = `
+    <img class="song-img"
+         src="${song.image_url || 'https://via.placeholder.com/52'}"
+         alt="${song.artist}"
+         onerror="this.src='https://via.placeholder.com/52'">
+    <div class="song-info">
+      <div class="song-title">${song.title  || 'Untitled'}</div>
+      <div class="song-meta">${song.artist  || 'Unknown'} · ${song.album || 'Unknown album'} · ${song.year || ''}</div>
+    </div>${btn}`;
+  return card;
+}
+
+// ── Load subscriptions ────────────────────────────────
+async function loadSubscriptions() {
+  const list    = document.getElementById("subList");
+  const empty   = document.getElementById("subEmpty");
+  const loading = document.getElementById("subLoading");
+  list.innerHTML    = "";
+  empty.style.display   = "none";
+  loading.style.display = "block";
+  try {
+    const res   = await fetch(`${getApiBase()}/subscriptions/${encodeURIComponent(EMAIL)}`);
+    const data  = await res.json();
+    const songs = extractArray(data);
+    loading.style.display = "none";
+    // Store all subscribed song IDs so query results
+    // can check and show "✓ Subscribed" instead of "Subscribe"
+    subscribedIds.clear();
+    songs.forEach(s => subscribedIds.add(normaliseSong(s).song_id));
+    if (songs.length === 0) { empty.style.display = "block"; return; }
+    for (const song of songs) list.appendChild(makeSongCard(song, "remove"));
+  } catch (e) {
+    loading.style.display = "none";
+    empty.textContent     = "Could not load subscriptions. Check backend/CORS.";
+    empty.style.display   = "block";
+  }
+}
+
+// ── Valid data from database ──────────────────────────
+const VALID_TITLES = ["#40", "#41", "1904", "40oz to Freedom", "A Sailor's Christmas", "American Girl", "American Music", "American Pie", "And it Stoned Me", "Bad Blood", "Badfish", "Banana Pancakes", "Barefoot Children", "Big Parade", "Brown Eyed Girl", "Cape Canaveral", "Carry On", "Cat's in the Cradle", "Catch the Wind", "Changes in Latitudes, Changes in Attitudes", "Classy Girls", "Creep", "Danny Boy", "Darkness Between the Fireflies", "Dead Sea", "Delicate", "Distantly in Love", "Do You Remember", "Don't Leave Me (Ne Me Quitte Pas)", "Don't Look Back in Anger", "Don't Stop Believin'", "Doomsday", "Drink the Water", "Emmylou", "Fall Line", "Father and Son", "Flake", "Flapper Girl", "Flowers in Your Hair", "Folsom Prison Blues", "Free Fallin'", "Furr", "Get Well Cards", "Gulf Coast Highway", "Half Light I", "Half Light II (No Celebration)", "Harvest", "Heart of Gold", "Here I Go Again", "Hey Jealousy", "Hey Soul Sister", "High and Dry", "Ho Hey", "Hollywood Forever Cemetery Sings", "Home", "Honey Do", "Hospitals and Jails", "Hotel California", "Hotel Yorba", "I Feel Home", "I Knew You Were Trouble", "I Won't Give Up", "I'm Writing a Novel", "Island in the Sun", "Jack & Diane", "Karma Police", "King of Spain", "King of the World", "Lean On Me", "Little Talks", "Live and Die", "Lola", "Lonesome Town", "Love Story", "Love in the Library", "Margaritaville", "Me and Julio Down by the Schoolyard", "Migration", "Moonshadow", "Mudfootball", "My Antonia", "New Realization", "No Surprises", "Nothing", "Nothing Else Matters", "Only Son of the Ladiesman", "Out on the Weekend", "Party in the USA", "Patience", "Redemption Song", "Rivers of Babylon", "Rocket Man", "Rodeo Clowns", "Send My Fond Regards to Lonelyville", "Sentimental Heart", "Shelter from the Storm", "Some Nights", "Somewhere Only We Know", "Space Oddity", "Stay or Leave", "Stubborn Love", "Stuck in the Middle With You", "Submarines", "Sugar Mountain", "Summer of '69", "Sweet Home Alabama", "Tangled Up in Blue", "The Drugs Don't Work", "The General", "The Lion's Roar", "The Man in Me", "The Mother We Share", "The Needle and the Damage Done", "The Weather is Here, Wish You Were Beautiful", "The Weight", "Tin Cup Chalice", "Tiny Dancer", "Trying to Reason with Hurricane Season", "Under the Milky Way", "Viva La Vida", "Watching the Wheels", "Way Over Yonder in the Minor Key", "We Are Never Ever Getting Back Together", "We're Going To Be Friends", "What I Got", "Wind and Walls", "With a Little Help From My Friends", "Ya Hey", "You Belong With Me", "You Love Me"];
+const VALID_ALBUMS = ["(What's the Story) Morning Glory?", "1989", "40oz. to Freedom", "A1A", "Acoustic: Bradley Nowell & Friends", "American Fool", "American IV: The Man Comes Around", "American Pie", "Bang Bang", "Barometer Soup", "Blood on the Tracks", "Blowin' Your Mind!", "Brushfire Fairytales", "Century Spring", "Changes in Latitudes, Changes in Attitudes", "Christmas Island", "Coconut Telegraph", "Conor Oberst", "Crash", "David Bowie (Space Oddity)", "Decade", "Doomsday", "Double Fantasy", "Elvis Perkins in Dearland", "Escape", "Fear Fun", "Fearless", "Fruitcakes", "Full Moon Fever", "Furr", "G N' R Lies", "Harvest", "Honky Ch\u00e2teau", "Hopes and Fears", "Hotel California", "How It Ends", "In Between Dreams", "Lalalalovesongs (Re:2021)", "Listener Supported", "Live from Mars", "Lola Versus Powerman and the Moneygoround, Part One", "Love is a Four Letter Word", "Madman Across the Water", "Mason Jennings", "Mermaid Avenue", "Metallica (The Black Album)", "Modern Vampires of the City", "Moondance", "Music from Big Pink", "My Head Is an Animal", "New Miserable Experience", "New Morning", "OK Computer", "On and On", "One Particular Harbour", "Pablo Honey", "Paul Simon", "Reckless", "Red", "Red (Deluxe Edition)", "Red Dirt Girl", "Reputation", "Reputation (Deluxe)", "Ricky Sings Again", "Risen", "Rivers of Babylon", "Rivers of Babylon (Re-release)", "Saints & Sinners", "Save Me, San Francisco", "Second Helping", "Sgt. Pepper's Lonely Hearts Club Band", "Some Devil", "Some Nights", "Starfish", "Stealers Wheel", "Still Bill", "Sublime", "Tea for the Tillerman", "Teaser and the Firecat", "The Bends", "The Bones of What You Believe", "The Carpenter", "The Isle of View", "The Lion's Roar", "The Lumineers", "The Suburbs", "The Time of Our Lives", "The Wild Hunt", "There's No Leaving Now", "To Pimp a Butterfly", "Tom Petty and the Heartbreakers", "Up from Below", "Uprising", "Verities & Balderdash", "Viva la Vida or Death and All His Friends", "Volume One", "Weezer (The Green Album)", "What We Saw from the Cheap Seats", "What's Bin Did and What's Bin Hid", "White Blood Cells", "Why Do Birds Sing?", "With His Hot and Blue Guitar"];
+const VALID_YEARS = ["1957","1958","1965","1967","1968","1969","1970","1971",
+  "1972","1974","1975","1977","1980","1981","1982","1983","1984","1988","1989",
+  "1991","1992","1993","1994","1995","1996","1997","1998","1999","2000","2001",
+  "2002","2003","2004","2005","2008","2009","2010","2012","2013","2014","2015",
+  "2017","2018","2021"];
+
+const VALID_ARTISTS = ["Arcade Fire","Ben Harper","Bill Withers","Billy Bragg & Wilco",
+  "Blitzen Trapper","Bob Dylan","Bob Marley","Bryan Adams","Cat Stevens","Chvrches",
+  "Coldplay","Conor Oberst","Dave Matthews","David Bowie","DeVotchKa","Dispatch",
+  "Don McLean","Donovan","Edward Sharpe & The Magnetic Zeros","Elton John",
+  "Elvis Perkins","Emmylou Harris","Father John Misty","First Aid Kit","Gin Blossoms",
+  "Guns N' Roses","Harry Chapin","Jack Johnson","Jason Mraz","Jimmy Buffett",
+  "John Lennon","John Mellencamp","Johnny Cash","Journey","Keane","Kendrick Lamar",
+  "Lynyrd Skynyrd","Mason Jennings","Metallica","Miley Cyrus","Neil Young","OAR",
+  "Oasis","Of Monsters and Men","Paul Simon","Radiohead","Regina Spektor",
+  "Ricky Nelson","She & Him","Stealers Wheel","Sublime","Taylor Swift",
+  "The Avett Brothers","The Band","The Beatles","The Church","The Eagles",
+  "The Kinks","The Lumineers","The Melodians","The Pretenders",
+  "The Tallest Man on Earth","The White Stripes","Tom Petty","Train",
+  "Vampire Weekend","Van Morrison","Violent Femmes","Weezer","Whitesnake","fun."];
+
+// ── Query songs ───────────────────────────────────────
+async function doQuery() {
+  const title  = document.getElementById("qTitle").value.trim();
+  const artist = document.getElementById("qArtist").value.trim();
+  const year   = document.getElementById("qYear").value.trim();
+  const album  = document.getElementById("qAlbum").value.trim();
+  const list   = document.getElementById("queryList");
+  list.innerHTML = "";
+  document.getElementById("queryStatus").style.display = "none";
+
+  // ── At least one field required ───────────────────
+  if (!title && !artist && !year && !album) {
+    showStatus("queryStatus", "Please fill in at least one field.", "error");
+    return;
+  }
+
+  // ── Validate year format ──────────────────────────
+  if (year) {
+    if (!/^\d{4}$/.test(year)) {
+      showStatus("queryStatus", "Year must be a 4-digit number (e.g. 2008).", "error");
+      document.getElementById("qYear").style.borderColor = "var(--error)";
+      return;
+    }
+    if (!VALID_YEARS.includes(year)) {
+      showStatus("queryStatus", `No songs found for year ${year}. Valid years range from 1957 to 2021.`, "error");
+      document.getElementById("qYear").style.borderColor = "var(--error)";
+      return;
+    }
+    document.getElementById("qYear").style.borderColor = "";
+  }
+
+  // ── Case-insensitive resolve for ALL fields ─────────
+  // Title — find correct casing
+  let resolvedTitle = title;
+  if (title) {
+    const matchTitle = VALID_TITLES.find(
+      t => t.toLowerCase() === title.toLowerCase()
+    );
+    if (matchTitle) resolvedTitle = matchTitle;
+  }
+
+  // Artist — find correct casing
+  let resolvedArtist = artist;
+  if (artist) {
+    const matchArtist = VALID_ARTISTS.find(
+      a => a.toLowerCase() === artist.toLowerCase()
+    );
+    if (matchArtist) resolvedArtist = matchArtist;
+  }
+
+  // Album — find correct casing
+  let resolvedAlbum = album;
+  if (album) {
+    const matchAlbum = VALID_ALBUMS.find(
+      a => a.toLowerCase() === album.toLowerCase()
+    );
+    if (matchAlbum) resolvedAlbum = matchAlbum;
+  }
+
+  setQueryLoading(true);
+  const params = new URLSearchParams();
+  if (resolvedArtist) params.set("artist", resolvedArtist);
+  if (resolvedAlbum)  params.set("album",  resolvedAlbum);
+  if (resolvedTitle)  params.set("title",  resolvedTitle);
+  if (year)           params.set("year",   year);
+
+  try {
+    const res   = await fetch(`${getApiBase()}/songs?${params.toString()}`);
+    const data  = await res.json();
+    const songs = extractArray(data);
+    setQueryLoading(false);
+    if (songs.length === 0) {
+      showStatus("queryStatus", "No result is retrieved. Please query again.", "info");
+      return;
+    }
+    for (const song of songs) {
+      const card = makeSongCard(song, "subscribe");
+      const s    = normaliseSong(song);
+      // If already subscribed show green button that does NOTHING
+      if (subscribedIds.has(s.song_id)) {
+        const btn = card.querySelector(".action-btn");
+        if (btn) {
+          btn.textContent      = "✓ Subscribed";
+          btn.style.background = "#2d7a4f";
+          btn.style.cursor     = "default";
+          btn.style.boxShadow  = "none";
+          btn.style.transform  = "none";
+          btn.style.pointerEvents = "none";
+          btn.disabled         = true;      
+          btn.onclick          = null;      
+        }
+      }
+      list.appendChild(card);
+    }
+  } catch (e) {
+    setQueryLoading(false);
+    showStatus("queryStatus", "Query failed. Check backend/CORS.", "error");
+  }
+}
+
+// ── Subscribe ─────────────────────────────────────────
+async function subscribe(btn) {
+  const card = btn.closest(".song-card");
+  const song = normaliseSong(card._song);
+  btn.disabled    = true;
+  btn.textContent = "...";
+  try {
+    const res = await fetch(`${getApiBase()}/subscriptions`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email:     EMAIL,
+        song_id:   song.song_id,
+        title:     song.title,
+        artist:    song.artist,
+        album:     song.album,
+        year:      song.year,
+        image_url: song.image_url
+      })
+    });
+    if (res.ok) {
+      // Add to subscription panel
+      document.getElementById("subEmpty").style.display = "none";
+      document.getElementById("subList").prepend(makeSongCard(song, "remove"));
+      // Track this song as subscribed
+      subscribedIds.add(song.song_id);
+      // Show green Subscribed button - block all clicks
+      btn.textContent           = "✓ Subscribed";
+      btn.style.background      = "#2d7a4f";
+      btn.style.cursor          = "default";
+      btn.style.transform       = "none";
+      btn.style.boxShadow       = "none";
+      btn.style.pointerEvents   = "none"; 
+      btn.disabled              = true;   
+      btn.onclick               = null;   
+    } else {
+      btn.disabled    = false;
+      btn.textContent = "Subscribe";
+    }
+  } catch (e) {
+    btn.disabled    = false;
+    btn.textContent = "Subscribe";
+  }
+}
+
+// ── Remove subscription ───────────────────────────────
+async function removeSub(btn) {
+  const card = btn.closest(".song-card");
+  const song = normaliseSong(card._song);
+  btn.disabled    = true;
+  btn.textContent = "...";
+  try {
+    const res = await fetch(`${getApiBase()}/subscriptions`, {
+      method:  "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email:   EMAIL,
+        song_id: song.song_id,
+        title:   song.title,
+        artist:  song.artist,
+        album:   song.album
+      })
+    });
+    if (res.ok) {
+      // Animate card out then remove
+      card.style.transition = "opacity 0.25s, transform 0.25s";
+      card.style.opacity    = "0";
+      card.style.transform  = "translateX(-10px)";
+      setTimeout(() => {
+        card.remove();
+        if (document.getElementById("subList").children.length === 0) {
+          document.getElementById("subEmpty").style.display = "block";
+        }
+      }, 250);
+
+      // Remove from tracking set so subscribe button resets
+      subscribedIds.delete(song.song_id);
+      // Reset matching Subscribe button in query results
+      const queryList = document.getElementById("queryList");
+      for (const c of queryList.children) {
+        const s = normaliseSong(c._song || {});
+        if (s.song_id === song.song_id) {
+          const qBtn = c.querySelector(".action-btn");
+          if (qBtn) {
+            qBtn.disabled              = false;
+            qBtn.textContent           = "Subscribe";
+            qBtn.style.background      = "";
+            qBtn.style.cursor          = "pointer";
+            qBtn.style.pointerEvents   = "auto"; // ✅ re-enable clicks
+            qBtn.onclick               = function() { subscribe(qBtn); };
+          }
+          break;
+        }
+      }
+    } else {
+      btn.disabled    = false;
+      btn.textContent = "Remove";
+    }
+  } catch (e) {
+    btn.disabled    = false;
+    btn.textContent = "Remove";
+  }
+}
+
+// ── Reset year border on input ───────────────────────
+document.getElementById("qYear").addEventListener("input", () => {
+  document.getElementById("qYear").style.borderColor = "";
+});
+
+// ── Autocomplete functions ────────────────────────────
+let activeIndex = -1;
+
+function showSuggestions(inputId, sugId, dataList) {
+  const input = document.getElementById(inputId);
+  const sug   = document.getElementById(sugId);
+  const val   = input.value.trim().toLowerCase();
+  activeIndex = -1;
+
+  if (!val || val.length < 1) { sug.style.display = "none"; return; }
+
+  // Filter matching items (case-insensitive contains)
+  const matches = dataList.filter(item =>
+    item.toLowerCase().includes(val)
+  ).slice(0, 8); // show max 8 suggestions
+
+  if (matches.length === 0) { sug.style.display = "none"; return; }
+
+  // Build suggestion items with highlighted match
+  sug.innerHTML = matches.map(item => {
+    const idx   = item.toLowerCase().indexOf(val);
+    const before = item.slice(0, idx);
+    const match  = item.slice(idx, idx + val.length);
+    const after  = item.slice(idx + val.length);
+    return `<div class="suggestion-item"
+      onmousedown="selectSuggestion('${inputId}','${sugId}','${item.replace(/'/g, "\'")}')">${before}<span class="suggestion-highlight">${match}</span>${after}</div>`;
+  }).join('');
+
+  sug.style.display = "block";
+}
+
+function selectSuggestion(inputId, sugId, value) {
+  document.getElementById(inputId).value = value;
+  document.getElementById(sugId).style.display = "none";
+  activeIndex = -1;
+  // Reset border color
+  document.getElementById(inputId).style.borderColor = "";
+}
+
+function hideSuggestions(sugId) {
+  // Small delay so click on suggestion fires first
+  setTimeout(() => {
+    const el = document.getElementById(sugId);
+    if (el) el.style.display = "none";
+    activeIndex = -1;
+  }, 150);
+}
+
+function handleKey(e, sugId, inputId) {
+  const sug   = document.getElementById(sugId);
+  const items = sug.querySelectorAll(".suggestion-item");
+
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    activeIndex = Math.min(activeIndex + 1, items.length - 1);
+    items.forEach((el, i) => el.classList.toggle("active", i === activeIndex));
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    activeIndex = Math.max(activeIndex - 1, -1);
+    items.forEach((el, i) => el.classList.toggle("active", i === activeIndex));
+  } else if (e.key === "Enter") {
+    if (activeIndex >= 0 && items[activeIndex]) {
+      e.preventDefault();
+      selectSuggestion(inputId, sugId, items[activeIndex].textContent);
+    } else {
+      doQuery();
+    }
+  } else if (e.key === "Escape") {
+    sug.style.display = "none";
+    activeIndex = -1;
+  }
+}
+
+loadSubscriptions();
+</script>
+</body>
+</html>
